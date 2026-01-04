@@ -17,7 +17,7 @@ export class AnthropicClient {
             const response = await axios.post(
                 this.apiUrl,
                 {
-                    model: 'claude-3-5-sonnet-20241022',
+                    model: 'claude-3-haiku-20240307',
                     max_tokens: 1024,
                     messages: [
                         {
@@ -28,7 +28,7 @@ export class AnthropicClient {
                 },
                 {
                     headers: {
-                        'x-api-key': this.apiKey,
+                        'x-api-key': this.apiKey.trim(),
                         'anthropic-version': '2023-06-01',
                         'Content-Type': 'application/json'
                     }
@@ -37,8 +37,9 @@ export class AnthropicClient {
 
             return response.data.content[0].text;
         } catch (error: any) {
-            console.error('Anthropic Analysis Error:', error.response?.data || error.message);
-            throw error;
+            const errorDetails = error.response?.data || error.message;
+            console.error('Anthropic Analysis FULL Error:', JSON.stringify(errorDetails, null, 2));
+            throw new Error(`Anthropic Error: ${JSON.stringify(errorDetails)}`);
         }
     }
 }
