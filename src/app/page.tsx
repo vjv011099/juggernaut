@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import * as XLSX from 'xlsx';
 
 export default function Home() {
   const [category, setCategory] = useState('');
@@ -25,6 +26,59 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const downloadExcel = () => {
+    if (!results || !Array.isArray(results)) return;
+
+    const dataRows: any[] = [];
+
+    results.forEach((item: any) => {
+      countries.forEach((country) => {
+        const rec = item.recommendations[country];
+        if (!rec) return;
+
+        let rationale = '';
+        try {
+          const parsed = typeof rec.insights.openai === 'string'
+            ? JSON.parse(rec.insights.openai)
+            : rec.insights.openai;
+          rationale = parsed.rationale || '';
+        } catch {
+          rationale = rec.insights.openai || '';
+        }
+
+        dataRows.push({
+          'Product': item.product.title,
+          'Country': country,
+          'Winning Price (€)': typeof rec.finalSuggestion === 'number'
+            ? rec.finalSuggestion.toFixed(2)
+            : rec.finalSuggestion,
+          'Rationale': rationale,
+          'Claude Positioning': typeof rec.insights.anthropic === 'string'
+            ? rec.insights.anthropic
+            : 'N/A',
+          'Market Trends': rec.insights.perplexity || 'N/A'
+        });
+      });
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Pricing Analysis");
+
+    // Auto-size columns (simple heuristic)
+    const wscols = [
+      { wch: 30 }, // Product
+      { wch: 10 }, // Country
+      { wch: 15 }, // Price
+      { wch: 60 }, // Rationale
+      { wch: 60 }, // Claude
+      { wch: 60 }  // Trends
+    ];
+    worksheet['!cols'] = wscols;
+
+    XLSX.writeFile(workbook, `Pricing_Analysis_${category || 'Report'}.xlsx`);
   };
 
   return (
@@ -62,6 +116,15 @@ export default function Home() {
             >
               {loading ? 'Analyzing...' : 'Run Analysis'}
             </button>
+
+            {results && (
+              <button
+                onClick={downloadExcel}
+                className="w-full rounded-lg border-2 border-green-600 bg-transparent px-8 py-3 font-semibold text-green-600 transition-all hover:bg-green-600 hover:text-white"
+              >
+                📥 Download Excel Report
+              </button>
+            )}
           </div>
         </section>
 
