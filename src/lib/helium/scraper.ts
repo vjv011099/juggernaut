@@ -17,7 +17,7 @@ export class HeliumScraper {
                 args: chromium.args,
                 defaultViewport: chromium.defaultViewport,
                 executablePath: await chromium.executablePath(),
-                headless: chromium.headless,
+                headless: chromium.headless as any,
             });
         }
         return puppeteer.launch({ headless: true });
